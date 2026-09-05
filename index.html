@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#07111f" />
+  <meta name="description" content="Urban 3D WebGIS — trực quan hóa GeoTIFF, DEM, Cesium ion assets và mô phỏng quy hoạch đô thị bằng CesiumJS." />
+  <title>Urban 3D WebGIS · Vietflexmap</title>
+
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Widgets/widgets.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">U3</span>
+        <div>
+          <strong>URBAN 3D WEBGIS</strong>
+          <small>Vietflexmap · CesiumJS + Cesium ion</small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="homeBtn" class="icon-btn" title="Về khu vực demo">⌂</button>
+        <button id="togglePanelBtn" class="icon-btn" title="Ẩn/hiện bảng điều khiển">☰</button>
+      </div>
+    </header>
+
+    <aside id="controlPanel" class="panel">
+      <section class="hero-card">
+        <span class="eyebrow">3D URBAN DIGITAL TWIN</span>
+        <h1>GeoTIFF + DEM → Cesium ion → Web 3D</h1>
+        <p>Nạp terrain và ảnh địa lý từ Cesium ion, dựng khối quy hoạch, kiểm tra đường ngắm và so sánh ảnh nhiều thời điểm.</p>
+      </section>
+
+      <section class="control-section">
+        <div class="section-title"><span>01</span><h2>Kết nối Cesium ion</h2></div>
+        <label for="ionToken">Access token</label>
+        <input id="ionToken" type="password" autocomplete="off" placeholder="Dán token (không lưu vào mã nguồn)" />
+        <div class="row">
+          <button id="saveTokenBtn" class="primary">Kích hoạt token</button>
+          <button id="clearTokenBtn" class="secondary">Xóa</button>
+        </div>
+        <p class="hint">Token chỉ được giữ trong sessionStorage của trình duyệt. Nên giới hạn domain và asset trong Cesium ion.</p>
+      </section>
+
+      <section class="control-section">
+        <div class="section-title"><span>02</span><h2>Terrain / DEM</h2></div>
+        <label for="terrainAssetId">Terrain Asset ID</label>
+        <input id="terrainAssetId" inputmode="numeric" placeholder="Ví dụ: 3956" />
+        <div class="row">
+          <button id="loadTerrainBtn" class="primary">Nạp DEM terrain</button>
+          <button id="ellipsoidBtn" class="secondary">Mặt cầu phẳng</button>
+        </div>
+      </section>
+
+      <section class="control-section">
+        <div class="section-title"><span>03</span><h2>Ảnh GeoTIFF</h2></div>
+        <label for="imageryAssetId">Imagery Asset ID</label>
+        <input id="imageryAssetId" inputmode="numeric" placeholder="Asset ảnh đã tile trên ion" />
+        <button id="loadImageryBtn" class="primary full">Phủ ảnh lên địa hình</button>
+        <label class="range-label" for="imageryAlpha">Độ trong suốt <output id="alphaValue">85%</output></label>
+        <input id="imageryAlpha" type="range" min="0" max="100" value="85" />
+      </section>
+
+      <section class="control-section">
+        <div class="section-title"><span>04</span><h2>Đô thị 3D</h2></div>
+        <div class="button-grid">
+          <button id="buildingsBtn" class="secondary">OSM Buildings</button>
+          <button id="planningBtn" class="secondary">Mẫu quy hoạch</button>
+          <button id="clearPlanningBtn" class="secondary">Xóa mô phỏng</button>
+          <button id="wireframeBtn" class="secondary">Wireframe</button>
+        </div>
+      </section>
+
+      <section class="control-section">
+        <div class="section-title"><span>05</span><h2>Phân tích tầm nhìn</h2></div>
+        <label for="observerHeight">Chiều cao mắt quan sát (m)</label>
+        <input id="observerHeight" type="number" min="1" max="500" value="15" />
+        <button id="losBtn" class="primary full">Chọn điểm quan sát + mục tiêu</button>
+        <button id="clearLosBtn" class="secondary full">Xóa kết quả đường ngắm</button>
+        <p class="hint">Bấm hai điểm trên địa hình. Hệ thống lấy mẫu DEM dọc tuyến để phát hiện vật cản địa hình.</p>
+      </section>
+
+      <section class="control-section">
+        <div class="section-title"><span>06</span><h2>Ảnh nhiều thời điểm</h2></div>
+        <label for="timelineAssets">Asset ID | nhãn thời gian</label>
+        <textarea id="timelineAssets" rows="3" placeholder="12345|2024-01, 23456|2025-01, 34567|2026-01"></textarea>
+        <button id="loadTimelineBtn" class="primary full">Nạp chuỗi ảnh</button>
+        <div class="row timeline-row">
+          <button id="prevTimeBtn" class="secondary">← Trước</button>
+          <span id="timelineLabel">Chưa nạp</span>
+          <button id="nextTimeBtn" class="secondary">Sau →</button>
+        </div>
+      </section>
+
+      <section class="control-section compact">
+        <div class="section-title"><span>07</span><h2>Dữ liệu vector</h2></div>
+        <label class="file-input">
+          <input id="geojsonFile" type="file" accept=".geojson,.json,application/geo+json,application/json" />
+          <span>+ Nạp GeoJSON cục bộ</span>
+        </label>
+      </section>
+
+      <footer class="panel-footer">
+        <span>CesiumJS 1.145</span>
+        <a href="https://github.com/Vietflexmap/urban" target="_blank" rel="noreferrer">Source ↗</a>
+      </footer>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="cesiumContainer"></div>
+      <div class="map-overlay top-left">
+        <div class="pill"><span class="live-dot"></span><span id="sceneStatus">DEMO · OSM 2D</span></div>
+        <div class="pill"><span>Camera</span><strong id="cameraReadout">—</strong></div>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <div class="legend">
+        <span><i class="swatch residential"></i> Khu ở</span>
+        <span><i class="swatch mixed"></i> Hỗn hợp</span>
+        <span><i class="swatch green"></i> Không gian xanh</span>
+      </div>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
