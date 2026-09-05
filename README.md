@@ -1,225 +1,124 @@
-# Urban 3D WebGIS · Vietflexmap
+# Urban Terrain Studio
 
-WebGIS 3D chạy trực tiếp trên trình duyệt, xây dựng với **CesiumJS + Cesium ion**, dành cho trực quan hóa ảnh GeoTIFF, DEM/terrain, dữ liệu quy hoạch và mô hình đô thị 3D.
+**1 DEM → bộ sản phẩm địa hình hoàn chỉnh + 3D WebGIS**
 
-> Upstream engine: https://github.com/CesiumGS/cesium  
-> Ứng dụng: https://vietflexmap.github.io/urban/
+Urban Terrain Studio là lớp tích hợp của Vietflexmap, xây dựng quanh workflow mã nguồn mở **Terrain Product Studio** cho QGIS. Mục tiêu là biến một DEM thành bộ sản phẩm dùng cho quy hoạch, địa hình, địa mạo, thủy văn, đánh giá nguy cơ và trình bày WebGIS.
 
-## 1. Mục tiêu
-
-Quy trình chính:
+## Kiến trúc
 
 ```text
-GeoTIFF / ảnh vệ tinh ─┐
-                       ├─> Upload Cesium ion ─> Asset ID ─┐
-DEM / heightmap ───────┘                                  │
-                                                          ├─> CesiumJS WebGIS 3D
-GeoJSON / quy hoạch / mô hình 3D ─────────────────────────┘
+DEM GeoTIFF
+   │
+   ├─ Web companion (GitHub Pages)
+   │   ├─ đọc GeoTIFF cục bộ bằng GeoTIFF.js
+   │   ├─ preview Elevation / Slope / Hillshade
+   │   ├─ dựng mesh 3D bằng Three.js
+   │   └─ tạo cấu hình chạy QGIS
+   │
+   └─ QGIS + Terrain Product Studio
+       └─ terrainstudio:buildterrainpackage
+           ├─ Topographic map
+           ├─ Slope / Aspect / TRI / TPI / Roughness
+           ├─ Profile / Planform curvature
+           ├─ Geomorphon
+           ├─ Hydrology / Streams / Basins / TWI
+           ├─ SPI / STI
+           ├─ Suitability / Landslide / Multihazard
+           ├─ GeoPackage bundle
+           ├─ Analytics HTML report
+           ├─ 3D WebGIS HTML
+           └─ STL / OBJ qua công cụ 3D export của plugin
 ```
 
-Khi GeoTIFF và DEM đã được gắn hệ tọa độ đúng, Cesium ion thực hiện bước lưu trữ/tiling/streaming. Ứng dụng web chỉ cần **ion access token + Asset ID** để tải dữ liệu lên quả địa cầu 3D.
+## Vì sao tách Web và QGIS?
 
-## 2. Chức năng hiện có
+GitHub Pages là ứng dụng tĩnh trong trình duyệt, không có QGIS Processing, GDAL native provider hay các thuật toán desktop cần cho hydrology/hazard. Vì vậy trang web chỉ làm **preview + cấu hình + trình bày**, còn pipeline kỹ thuật đầy đủ chạy bằng QGIS. Cách này giữ đúng thuật toán upstream thay vì mô phỏng sai trong JavaScript.
 
-- Nền WebGIS 3D CesiumJS 1.145.
-- Chạy demo ngay với OpenStreetMap, không bắt buộc token.
-- Nhập Cesium ion token tại runtime; token không được commit trong source.
-- Nạp DEM/terrain từ Cesium ion Asset ID.
-- Hỗ trợ cả Cesium Terrain (quantized-mesh/heightmap) và fallback 3D Tiles terrain.
-- Phủ ảnh GeoTIFF đã tile thành Imagery asset lên terrain.
-- Điều chỉnh opacity lớp ảnh.
-- Bật/tắt Cesium OSM Buildings.
-- Dựng mô hình quy hoạch minh họa: khối nhà, tuyến đường, không gian xanh.
-- Phân tích **Line of Sight (LOS)** dựa trên lấy mẫu cao độ dọc đường ngắm.
-- So sánh imagery nhiều thời điểm bằng chuỗi Asset ID.
-- Nạp GeoJSON cục bộ, clamp lên địa hình.
-- Wireframe terrain debug.
-- Giao diện responsive cho desktop và mobile.
-- GitHub Actions deploy tự động lên GitHub Pages.
+## Chạy nhanh
 
-## 3. Cấu trúc mã nguồn
+1. Cài QGIS 3.34+ hoặc QGIS 4.x tương thích.
+2. Cài/enable Terrain Product Studio từ upstream:
+   https://github.com/hulauwa/terrain-product-studio
+3. Clone repo này.
+4. Trong QGIS Python Console, thêm repo vào `sys.path`, sau đó:
+
+```python
+from qgis.urban_one_click import run_terrain_studio
+
+result = run_terrain_studio(
+    r"C:\GIS\dem.tif",
+    r"C:\GIS\output",
+    prefix="urban_terrain",
+)
+print(result)
+```
+
+Bridge gọi trực tiếp Processing algorithm:
 
 ```text
-urban/
-├── index.html                  # giao diện ứng dụng
-├── styles.css                  # UI responsive / dark WebGIS
-├── app.js                      # toàn bộ logic CesiumJS
-├── .nojekyll                   # phục vụ static asset trực tiếp
-├── .github/
-│   └── workflows/
-│       └── pages.yml           # deploy GitHub Pages
-└── README.md
+terrainstudio:buildterrainpackage
 ```
 
-Ứng dụng dùng CesiumJS từ CDN chính thức, vì vậy repo này không fork/copy toàn bộ CesiumJS. Cách này giữ mã ứng dụng nhỏ, dễ cập nhật và vẫn dựa trên engine mã nguồn mở CesiumJS.
+## Sản phẩm mặc định được bật
 
-## 4. Quy trình GeoTIFF + DEM
+- Color relief
+- Hillshade + multi-direction hillshade
+- Slope
+- Aspect
+- TRI
+- TPI
+- Roughness
+- Profile curvature
+- Planform curvature
+- Contours
+- Spot elevations
+- Geomorphon
+- Hydrology
+- Watershed basins
+- TWI
+- SPI
+- STI
+- Construction suitability
+- Landslide hazard
+- Multihazard
+- GeoPackage bundle
+- Portable DEM copy
+- 3D WebGIS viewer
+- Topographic intelligence report
 
-### Bước A — Chuẩn bị dữ liệu
+## Web application
 
-**GeoTIFF**
-- Ảnh vệ tinh / orthophoto / bản đồ quy hoạch raster.
-- Phải có georeference chính xác.
-- Nên kiểm tra CRS, extent, NoData và độ phân giải trước khi upload.
+Trang `index.html` dùng cùng họ công nghệ WebGIS 3D mà upstream sử dụng cho viewer: **Three.js + GeoTIFF.js**. DEM được đọc bằng `File.arrayBuffer()` và xử lý cục bộ trong browser; app không upload DEM lên server.
 
-**DEM**
-- GeoTIFF elevation hoặc định dạng terrain mà Cesium ion chấp nhận.
-- Đảm bảo đơn vị cao độ và hệ tọa độ đúng.
+Preview browser cố ý resample DEM xuống lưới nhỏ để giữ hiệu năng. Đây không phải kết quả phân tích kỹ thuật cuối cùng.
 
-### Bước B — Upload lên Cesium ion
-
-1. Đăng nhập Cesium ion.
-2. Upload GeoTIFF ảnh và chọn xử lý thành **Imagery**.
-3. Upload DEM và chọn xử lý thành **Terrain**.
-4. Chờ ion hoàn tất tiling.
-5. Ghi lại **Asset ID** của từng lớp.
-6. Tạo access token riêng cho ứng dụng.
-
-Khuyến nghị bảo mật token:
-- dùng token riêng cho `urban`;
-- chỉ cấp asset cần thiết;
-- giới hạn Allowed URLs/domain cho GitHub Pages;
-- không commit token có quyền rộng vào repo public.
-
-## 5. Chạy ứng dụng
-
-### Cách 1 — GitHub Pages
-
-Push lên nhánh `main`. Workflow `.github/workflows/pages.yml` sẽ build/deploy static site.
-
-Nếu Pages chưa được bật cho repo:
-
-1. GitHub → **Settings** → **Pages**.
-2. Source → chọn **GitHub Actions**.
-3. Chạy lại workflow `Deploy Urban 3D WebGIS to Pages` nếu cần.
-
-Trang dự kiến:
+## Các file chính
 
 ```text
-https://vietflexmap.github.io/urban/
+index.html                  # giao diện web companion
+styles.css                  # responsive dark UI
+app.js                      # đọc GeoTIFF + 3D mesh + preview
+qgis/__init__.py
+qgis/urban_one_click.py     # bridge QGIS → terrainstudio:buildterrainpackage
+UPSTREAM.md                 # nguồn, giấy phép, attribution
+.github/workflows/pages.yml # kiểm tra JS + deploy GitHub Pages
 ```
 
-### Cách 2 — Chạy local
+## Nguồn upstream và giấy phép
 
-Không mở `index.html` bằng `file://` nếu trình duyệt chặn request. Dùng HTTP server đơn giản:
+Workflow được xây dựng dựa trên Terrain Product Studio của **Nguyễn Văn Tín / hulauwa**:
 
-```bash
-python -m http.server 8080
-```
+https://github.com/hulauwa/terrain-product-studio
 
-Mở:
+Upstream công bố **GPL v2+**. Phần tích hợp này được duy trì theo hướng tương thích GPL-2.0-or-later. Xem `UPSTREAM.md` để biết chi tiết nguồn và các phần được tái sử dụng về kiến trúc/API.
 
-```text
-http://localhost:8080
-```
+## Ghi chú kỹ thuật
 
-## 6. Nạp asset riêng
-
-Trong sidebar ứng dụng:
-
-1. Dán **Cesium ion access token** → `Kích hoạt token`.
-2. Điền Terrain Asset ID → `Nạp DEM terrain`.
-3. Điền Imagery Asset ID → `Phủ ảnh lên địa hình`.
-4. Điều chỉnh opacity để so sánh ảnh với nền.
-
-Token được lưu trong `sessionStorage`, tức chỉ tồn tại trong phiên tab/trình duyệt hiện tại.
-
-## 7. Ảnh nhiều thời điểm
-
-Nhập dạng:
-
-```text
-12345|2024-01, 23456|2025-01, 34567|2026-01
-```
-
-Sau đó bấm **Nạp chuỗi ảnh** và dùng nút `Trước / Sau` để chuyển thời điểm.
-
-Ứng dụng này phù hợp để:
-- theo dõi đô thị hóa;
-- theo dõi san lấp / mở đường;
-- so sánh hiện trạng trước–sau dự án;
-- theo dõi thay đổi sử dụng đất.
-
-## 8. Phân tích tầm nhìn (LOS)
-
-1. Nạp DEM terrain.
-2. Chọn chiều cao mắt quan sát, ví dụ `15 m`.
-3. Bấm `Chọn điểm quan sát + mục tiêu`.
-4. Click điểm quan sát trên bản đồ.
-5. Click điểm mục tiêu.
-
-Ứng dụng tạo tuyến trắc địa giữa hai điểm, lấy mẫu cao độ terrain bằng CesiumJS và so sánh đường ngắm lý thuyết với địa hình.
-
-- Xanh: nhìn thấy theo DEM.
-- Đỏ: bị địa hình che.
-- Điểm cam: vị trí terrain gây che khuất đầu tiên.
-
-> Đây là LOS terrain-level. Muốn phân tích tầm nhìn có xét tòa nhà/cây/công trình 3D cần bổ sung ray casting hoặc viewshed/shadow-map chuyên sâu trên 3D Tiles.
-
-## 9. Ứng dụng quy hoạch đô thị
-
-### Mô phỏng dự án
-Đưa bản vẽ quy hoạch raster lên terrain thật để kiểm tra quan hệ giữa cao độ, địa hình và bố cục dự án.
-
-### Trình bày chiến lược phát triển
-Kết hợp polygon quy hoạch, khối 3D, hành lang giao thông và không gian xanh để tạo sơ đồ đô thị trực quan.
-
-### Digital Twin
-Có thể mở rộng để nạp:
-- 3D Tiles / BIM / CityGML đã chuyển đổi;
-- point cloud LiDAR;
-- camera / IoT realtime;
-- lớp công trình theo giai đoạn;
-- dữ liệu giao thông;
-- dữ liệu môi trường;
-- dữ liệu quy hoạch và địa chính.
-
-## 10. API CesiumJS được dùng
-
-```js
-// Terrain từ DEM asset
-viewer.terrainProvider = await Cesium.CesiumTerrainProvider.fromIonAssetId(assetId);
-
-// Imagery từ GeoTIFF asset
-const provider = await Cesium.IonImageryProvider.fromAssetId(assetId);
-viewer.imageryLayers.addImageryProvider(provider);
-
-// OSM Buildings
-const buildings = await Cesium.createOsmBuildingsAsync();
-viewer.scene.primitives.add(buildings);
-```
-
-## 11. Nâng cấp tiếp theo
-
-Các module phù hợp để phát triển tiếp:
-
-- kéo/thả KML, CZML, GPX, Shapefile đã convert;
-- panel quản lý layer chuyên nghiệp;
-- geocoding / tìm địa điểm;
-- đo khoảng cách, diện tích, cao độ;
-- mặt cắt địa hình;
-- viewshed dạng vùng 360°;
-- flood simulation theo DEM;
-- cut/fill san nền;
-- clipping 3D Tiles;
-- BIM/CAD + 3D Tiles;
-- timeline vệ tinh có thanh slider;
-- API backend lưu project, layer, camera bookmark;
-- phân quyền người dùng và dashboard dự án.
-
-## 12. Công nghệ
-
-- CesiumJS 1.145
-- Cesium ion
-- HTML5 / CSS3 / JavaScript
-- OpenStreetMap
-- GitHub Pages / GitHub Actions
-
-## 13. Giấy phép và attribution
-
-CesiumJS là dự án mã nguồn mở của CesiumGS. Repo này sử dụng CesiumJS như dependency từ CDN và không thay đổi giấy phép upstream. Khi dùng dữ liệu hoặc dịch vụ bên thứ ba, cần giữ attribution tương ứng và tuân thủ điều khoản của từng nhà cung cấp dữ liệu.
+- Nếu DEM ở hệ tọa độ địa lý, Terrain Product Studio có cơ chế auto-reproject trước các phép tính địa hình.
+- Hydrology phải chạy theo dependency pipeline trước các chỉ số dùng flow accumulation.
+- STL/OBJ được tạo bởi công cụ 3D export của plugin; bridge không giả định mọi phiên bản upstream đều expose mesh qua master Processing algorithm.
+- Với DEM lớn, nên chạy full pipeline trong QGIS thay vì browser.
 
 ---
 
-**Vietflexmap · Urban 3D WebGIS**  
-GeoTIFF + DEM + 3D Tiles + CesiumJS → môi trường quy hoạch đô thị 3D trên trình duyệt.
+**Vietflexmap · Urban Terrain Studio**

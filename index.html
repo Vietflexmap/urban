@@ -1,129 +1,93 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#07111f" />
-  <meta name="description" content="Urban 3D WebGIS — trực quan hóa GeoTIFF, DEM, Cesium ion assets và mô phỏng quy hoạch đô thị bằng CesiumJS." />
-  <title>Urban 3D WebGIS · Vietflexmap</title>
-
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Cesium.js"></script>
-  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Widgets/widgets.css" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Urban Terrain Studio — từ một DEM đến bộ sản phẩm địa hình, địa mạo, thủy văn, hazard, 3D WebGIS và GeoPackage.">
+  <title>Urban Terrain Studio · Vietflexmap</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="app">
+  <div class="app-shell">
     <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark">U3</span>
-        <div>
-          <strong>URBAN 3D WEBGIS</strong>
-          <small>Vietflexmap · CesiumJS + Cesium ion</small>
-        </div>
-      </div>
-      <div class="top-actions">
-        <button id="homeBtn" class="icon-btn" title="Về khu vực demo">⌂</button>
-        <button id="togglePanelBtn" class="icon-btn" title="Ẩn/hiện bảng điều khiển">☰</button>
-      </div>
+      <div class="brand"><span class="mark">▲</span><div><strong>URBAN TERRAIN STUDIO</strong><small>Vietflexmap · powered by Terrain Product Studio workflow</small></div></div>
+      <div class="status"><span class="dot"></span><span id="engineStatus">WEB PREVIEW READY</span></div>
     </header>
 
-    <aside id="controlPanel" class="panel">
-      <section class="hero-card">
-        <span class="eyebrow">3D URBAN DIGITAL TWIN</span>
-        <h1>GeoTIFF + DEM → Cesium ion → Web 3D</h1>
-        <p>Nạp terrain và ảnh địa lý từ Cesium ion, dựng khối quy hoạch, kiểm tra đường ngắm và so sánh ảnh nhiều thời điểm.</p>
-      </section>
-
-      <section class="control-section">
-        <div class="section-title"><span>01</span><h2>Kết nối Cesium ion</h2></div>
-        <label for="ionToken">Access token</label>
-        <input id="ionToken" type="password" autocomplete="off" placeholder="Dán token (không lưu vào mã nguồn)" />
-        <div class="row">
-          <button id="saveTokenBtn" class="primary">Kích hoạt token</button>
-          <button id="clearTokenBtn" class="secondary">Xóa</button>
-        </div>
-        <p class="hint">Token chỉ được giữ trong sessionStorage của trình duyệt. Nên giới hạn domain và asset trong Cesium ion.</p>
-      </section>
-
-      <section class="control-section">
-        <div class="section-title"><span>02</span><h2>Terrain / DEM</h2></div>
-        <label for="terrainAssetId">Terrain Asset ID</label>
-        <input id="terrainAssetId" inputmode="numeric" placeholder="Ví dụ: 3956" />
-        <div class="row">
-          <button id="loadTerrainBtn" class="primary">Nạp DEM terrain</button>
-          <button id="ellipsoidBtn" class="secondary">Mặt cầu phẳng</button>
-        </div>
-      </section>
-
-      <section class="control-section">
-        <div class="section-title"><span>03</span><h2>Ảnh GeoTIFF</h2></div>
-        <label for="imageryAssetId">Imagery Asset ID</label>
-        <input id="imageryAssetId" inputmode="numeric" placeholder="Asset ảnh đã tile trên ion" />
-        <button id="loadImageryBtn" class="primary full">Phủ ảnh lên địa hình</button>
-        <label class="range-label" for="imageryAlpha">Độ trong suốt <output id="alphaValue">85%</output></label>
-        <input id="imageryAlpha" type="range" min="0" max="100" value="85" />
-      </section>
-
-      <section class="control-section">
-        <div class="section-title"><span>04</span><h2>Đô thị 3D</h2></div>
-        <div class="button-grid">
-          <button id="buildingsBtn" class="secondary">OSM Buildings</button>
-          <button id="planningBtn" class="secondary">Mẫu quy hoạch</button>
-          <button id="clearPlanningBtn" class="secondary">Xóa mô phỏng</button>
-          <button id="wireframeBtn" class="secondary">Wireframe</button>
-        </div>
-      </section>
-
-      <section class="control-section">
-        <div class="section-title"><span>05</span><h2>Phân tích tầm nhìn</h2></div>
-        <label for="observerHeight">Chiều cao mắt quan sát (m)</label>
-        <input id="observerHeight" type="number" min="1" max="500" value="15" />
-        <button id="losBtn" class="primary full">Chọn điểm quan sát + mục tiêu</button>
-        <button id="clearLosBtn" class="secondary full">Xóa kết quả đường ngắm</button>
-        <p class="hint">Bấm hai điểm trên địa hình. Hệ thống lấy mẫu DEM dọc tuyến để phát hiện vật cản địa hình.</p>
-      </section>
-
-      <section class="control-section">
-        <div class="section-title"><span>06</span><h2>Ảnh nhiều thời điểm</h2></div>
-        <label for="timelineAssets">Asset ID | nhãn thời gian</label>
-        <textarea id="timelineAssets" rows="3" placeholder="12345|2024-01, 23456|2025-01, 34567|2026-01"></textarea>
-        <button id="loadTimelineBtn" class="primary full">Nạp chuỗi ảnh</button>
-        <div class="row timeline-row">
-          <button id="prevTimeBtn" class="secondary">← Trước</button>
-          <span id="timelineLabel">Chưa nạp</span>
-          <button id="nextTimeBtn" class="secondary">Sau →</button>
-        </div>
-      </section>
-
-      <section class="control-section compact">
-        <div class="section-title"><span>07</span><h2>Dữ liệu vector</h2></div>
-        <label class="file-input">
-          <input id="geojsonFile" type="file" accept=".geojson,.json,application/geo+json,application/json" />
-          <span>+ Nạp GeoJSON cục bộ</span>
+    <aside class="sidebar">
+      <section class="panel hero-panel">
+        <div class="eyebrow">01 · INPUT</div>
+        <h1>1 DEM → bộ sản phẩm địa hình hoàn chỉnh</h1>
+        <p>Thả GeoTIFF DEM để kiểm tra nhanh và dựng địa hình 3D ngay trên trình duyệt. Bộ phân tích đầy đủ chạy trong QGIS bằng Terrain Product Studio.</p>
+        <label class="dropzone" id="dropzone">
+          <input id="demFile" type="file" accept=".tif,.tiff,image/tiff">
+          <span class="drop-icon">⇧</span>
+          <strong>Chọn hoặc thả DEM GeoTIFF</strong>
+          <small>DEM có CRS và georeference được khuyến nghị</small>
         </label>
       </section>
 
-      <footer class="panel-footer">
-        <span>CesiumJS 1.145</span>
-        <a href="https://github.com/Vietflexmap/urban" target="_blank" rel="noreferrer">Source ↗</a>
-      </footer>
+      <section class="panel" id="demInfoPanel">
+        <div class="eyebrow">02 · DEM INSPECT</div>
+        <div class="metrics">
+          <div><span>Kích thước</span><b id="demSize">—</b></div>
+          <div><span>Min / Max</span><b id="demRange">—</b></div>
+          <div><span>Biên độ cao</span><b id="demRelief">—</b></div>
+          <div><span>Bounding box</span><b id="demBounds">—</b></div>
+        </div>
+      </section>
+
+      <section class="panel controls-panel">
+        <div class="eyebrow">03 · 3D PREVIEW</div>
+        <label>Phóng đại cao độ <output id="zValue">1.8×</output></label>
+        <input id="zScale" type="range" min="0.2" max="8" step="0.1" value="1.8">
+        <div class="segmented">
+          <button class="view-btn active" data-mode="elevation">Elevation</button>
+          <button class="view-btn" data-mode="slope">Slope</button>
+          <button class="view-btn" data-mode="hillshade">Hillshade</button>
+        </div>
+        <button id="resetView" class="btn secondary">Reset camera</button>
+      </section>
     </aside>
 
-    <main class="map-wrap">
-      <div id="cesiumContainer"></div>
-      <div class="map-overlay top-left">
-        <div class="pill"><span class="live-dot"></span><span id="sceneStatus">DEMO · OSM 2D</span></div>
-        <div class="pill"><span>Camera</span><strong id="cameraReadout">—</strong></div>
+    <main class="workspace">
+      <div id="viewer" class="viewer">
+        <div class="empty-state" id="emptyState"><span>3D</span><strong>Terrain WebGIS Preview</strong><p>Upload DEM để tạo mesh địa hình trực tiếp bằng Three.js + GeoTIFF.js.</p></div>
       </div>
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
-      <div class="legend">
-        <span><i class="swatch residential"></i> Khu ở</span>
-        <span><i class="swatch mixed"></i> Hỗn hợp</span>
-        <span><i class="swatch green"></i> Không gian xanh</span>
-      </div>
+      <div class="viewer-badge">LOCAL DEM · CLIENT-SIDE PREVIEW</div>
+      <div class="coord-readout" id="coordReadout">Không tải dữ liệu lên server</div>
     </main>
+
+    <aside class="products">
+      <section class="panel product-panel">
+        <div class="panel-head"><div><div class="eyebrow">04 · PRODUCTS</div><h2>Pipeline một chạm</h2></div><button id="toggleAll" class="mini-btn">Bật tất cả</button></div>
+        <div id="productGrid" class="product-grid"></div>
+      </section>
+
+      <section class="panel run-panel">
+        <div class="eyebrow">05 · QGIS ENGINE</div>
+        <h2>Chạy bộ sản phẩm đầy đủ</h2>
+        <p>Web không thể chạy QGIS/GDAL Processing trực tiếp. Repo kèm bridge Python gọi provider <code>terrainstudio:buildterrainpackage</code> để xử lý DEM thật trong QGIS.</p>
+        <label>Tên prefix<input id="prefix" value="urban_terrain"></label>
+        <div class="run-actions">
+          <button id="downloadConfig" class="btn primary">Tải cấu hình JSON</button>
+          <button id="copyCommand" class="btn secondary">Copy lệnh QGIS</button>
+        </div>
+        <div id="runMessage" class="run-message">Chọn DEM và sản phẩm cần sinh.</div>
+      </section>
+
+      <section class="panel outputs-panel">
+        <div class="eyebrow">OUTPUT BUNDLE</div>
+        <div class="output-tags"><span>GeoTIFF</span><span>GeoPackage</span><span>HTML Report</span><span>3D WebGIS</span><span>STL / OBJ</span><span>QGIS Project</span></div>
+      </section>
+    </aside>
   </div>
 
-  <script src="./app.js"></script>
+  <footer>Derivative companion for <a href="https://github.com/hulauwa/terrain-product-studio" target="_blank" rel="noreferrer">Terrain Product Studio</a> · upstream GPL-2.0-or-later · original author Nguyễn Văn Tín · Vietflexmap integration.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

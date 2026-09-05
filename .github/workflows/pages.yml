@@ -1,4 +1,4 @@
-name: Deploy Urban 3D WebGIS to Pages
+name: Deploy Urban Terrain Studio to Pages
 
 on:
   push:
@@ -29,6 +29,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
